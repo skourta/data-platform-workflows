@@ -8,9 +8,13 @@ This requires pull requests to be named according to the following convention.
 ### Public interface
 *Public workflows*: workflows in [.github/workflows](.github/workflows) that do not begin with an underscore
 
-The public interface consists of (explicit and implicit) input and output for the *public workflows*. This includes:
+*Public actions*: actions in the repository root directory (e.g. [run-secscan](run-secscan/action.yml))
+
+The public interface consists of (explicit and implicit) input and output for the *public workflows* and *public actions*. This includes:
 - *Public workflow* file names
 - *Public workflow* `inputs` and `outputs` under `workflow_call`
+- *Public action* directory names
+- *Public action* `inputs` and `outputs`
 - Any assumptions made about the caller workflow repository layout (e.g. existence of tox.ini file). This applies to any workflows or scripts called by a *public workflow*, **even if they begin with an underscore**. (e.g. [_get_workflow_version.yaml](.github/workflows/_get_workflow_version.yaml), [_cli](_cli))
 
 ### Pull request name convention

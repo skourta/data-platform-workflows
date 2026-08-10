@@ -1,0 +1,104 @@
+# Copyright 2026 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: 'Run the secscan tool'
+description: 'Run the secscan tool for the given artifacts.'
+
+inputs:
+  charm-file:
+    description: 'Location of a charm file to scan. Scans for the charm are skipped if left empty.'
+    required: false
+  charm-version:
+    description: 'Version of the charm artifact to scan, ignored when charm-file is empty. Required for SSDLC v.1.2.'
+    required: false
+  oci-image-file:
+    description: 'Location of a OCI image file to scan. Scans for the OCI image are skipped if left empty.'
+    required: false
+  oci-image-version:
+    description: 'Version of the OCI image artifact to scan, ignored when oci-image-file is empty. Required for SSDLC v.1.2.'
+    required: false
+  snap-file:
+    description: |
+      Location of the snap file to scan. Scans for the snap are skipped if both snap-file and snap-name are left empty.
+      Only one of snap-file or snap-name should be set.
+    required: false
+  snap-name:
+    description: |
+      Name of the snap to scan. Scans for the snap are skipped if both snap-file and snap-name are left empty.
+      Only one of snap-file or snap-name should be set.
+    required: false
+  snap-version:
+    description: 'Version of the snap to scan, ignored when snap-file is empty. Required for SSDLC v.1.2'
+    required: false
+  excluded-cves-file:
+    description: 'Location of a txt file listing CVEs to exclude from the scan results, one CVE per line.'
+    required: false
+  product-name:
+    description: 'Name of the product to be scanned, required for SSDLC v1.2.'
+    required: false
+  cycle:
+    description: 'Cycle the scan is submitted for, such as 25.04. Required for SSDLC v1.2.'
+    required: false
+  release-channel:
+    description: 'Release channel of the scanned artifacts, such as edge or stable. Required for SSDLC v1.2.'
+    required: false
+  nvd-api-key:
+    description: |
+      API key for the NVD database, required to enrich vulnerabilities with patch information. Recommended for rate limiting.
+      Can be obtained for free from https://nvd.nist.gov/developers/request-an-api-key.
+    required: false
+
+outputs:
+  results-location:
+    description: "Location of the downloaded secscan results"
+    value: ${{ steps.run-secscan.outputs.results-location }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set path to the secscan script
+      id: set-script-path
+      run: echo "secscan_path=$(realpath ${{ github.action_path }}/../scripts/secscan)" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Set up Python 3.13
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      with:
+        python-version: 3.13
+    - name: Install dependencies
+      id: install-dependencies
+      shell: bash
+      run: |
+        sudo snap install canonical-secscan-client
+        sudo snap connect canonical-secscan-client:home :home
+        pip install -r ${SECSCAN_PATH}/requirements.txt
+      env:
+        SECSCAN_PATH: ${{ steps.set-script-path.outputs.secscan_path }}
+    - name: Run secscan tool
+      id: run-secscan
+      shell: bash
+      run: |
+        set +e
+        python ${SECSCAN_PATH}/run-secscan.py
+        ret=$?
+        set -e
+
+        # Set output
+        SECSCAN_RESULTS_DIR=$(realpath ${SECSCAN_PATH}/../../secscan-results)
+        echo "Setting results-location to $SECSCAN_RESULTS_DIR"
+        echo "results-location=$(echo $SECSCAN_RESULTS_DIR)" >> $GITHUB_OUTPUT
+        exit $ret
+      env:
+        SECSCAN_PATH: ${{ steps.set-script-path.outputs.secscan_path }}
+        OCI_FILENAME: ${{ inputs.oci-image-file }}
+        OCI_VERSION: ${{ inputs.oci-image-version }}
+        CHARM_FILENAME: ${{ inputs.charm-file }}
+        CHARM_VERSION: ${{ inputs.charm-version }}
+        SNAP_FILENAME: ${{ inputs.snap-file }}
+        SNAP_NAME: ${{ inputs.snap-name }}
+        SNAP_VERSION: ${{ inputs.snap-version }}
+        EXCLUDED_CVES_FILE: ${{ inputs.excluded-cves-file }}
+        PRODUCT_NAME: ${{ inputs.product-name }}
+        CYCLE: ${{ inputs.cycle }}
+        RELEASE_CHANNEL: ${{ inputs.release-channel }}
+        NO_PROXY: ".internal"
+        NVD_API_KEY: ${{ inputs.nvd-api-key }}

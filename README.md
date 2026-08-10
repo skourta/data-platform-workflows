@@ -24,6 +24,22 @@
 | [_update_bundle.yaml](.github/workflows/_update_bundle.md)                     | **Experimental** Update charm revisions in bundle                                                                 |
 | [sync_docs.yaml](.github/workflows/sync_docs.md)                               | **Deprecated** Sync Discourse documentation to GitHub                                                             |
 
+### Actions
+| Name                                    | Description                              |
+|-----------------------------------------|------------------------------------------|
+| [run-secscan](run-secscan/action.yml)   | Run the secscan tool for given artifacts |
+
+Example usage:
+```yaml
+steps:
+  - name: Run secscan
+    id: run-secscan
+    uses: canonical/data-platform-workflows/run-secscan@v1.0.0
+    with:
+      charm-file: my-charm.charm
+      charm-version: "123"
+```
+
 ### Version
 Recommendation: pin the latest version (e.g. `v1.0.0`) and use [Renovate](https://docs.renovatebot.com/) to stay up-to-date.
 
@@ -59,6 +75,8 @@ Workflows that do **not** begin with an underscore (e.g. `foo.yaml`) may be call
 Workflows that begin with one underscore (e.g. `_foo.yaml`) are internal and are only intended to be called by reusable workflows in this repository (that begin with zero or one underscores).
 
 Workflows that begin with two underscores (e.g. `__foo.yaml`) are for this repository only. They may only be (triggered by an event on this repository or) called by workflows in this repository that begin with two underscores.
+
+Actions (e.g. [run-secscan](run-secscan/action.yml)) may be used outside this repository.
 
 ## Documentation
 
